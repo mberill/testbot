@@ -2,115 +2,180 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Мобильный калькулятор</title>
+    <title>Telegram Calculator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* Мобильная адаптация */
         * {
+            touch-action: manipulation;
             box-sizing: border-box;
-            touch-action: manipulation; /* Отключает масштабирование при двойном тапе */
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            margin: 0;
-            padding: 10px;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            background: #f0f2f5;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--tg-theme-bg-color, #f0f2f5);
+            color: var(--tg-theme-text-color, #000);
+            height: 100vh;
+            padding: 10px;
         }
 
         #calculator {
-            width: 100%;
-            max-width: 500px; /* Максимальная ширина для планшетов */
+            max-width: 100%;
             margin: 0 auto;
         }
 
         #display {
             width: 100%;
-            height: 15vh;
+            height: 20vh;
             min-height: 80px;
             margin-bottom: 2vh;
             font-size: 8vw;
             text-align: right;
             padding: 15px;
+            background: var(--tg-theme-secondary-bg-color, #fff);
             border: none;
-            border-radius: 15px;
-            background: #ffffff;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            color: var(--tg-theme-text-color, #000);
         }
 
         .buttons {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 1.5vw;
+            gap: 2vw;
         }
 
         button {
             padding: 4vh 0;
             font-size: 5vw;
             border: none;
-            border-radius: 12px;
-            background: #fff;
-            transition: all 0.1s ease;
+            border-radius: 10px;
+            background: var(--tg-theme-secondary-bg-color, #fff);
+            color: var(--tg-theme-text-color, #000);
+            transition: filter 0.1s;
             -webkit-tap-highlight-color: transparent;
         }
 
         button:active {
-            transform: scale(0.95);
-            background: #e0e0e0;
+            filter: brightness(0.9);
         }
 
         button.operator {
-            background: #f0f2f5;
+            background: var(--tg-theme-section-bg-color, #f0f2f5);
         }
 
         button.equals {
             background: #007bff;
-            color: white;
+            color: #fff;
         }
 
-        /* Адаптация для очень маленьких экранов */
-        @media (max-width: 350px) {
+        @media (min-width: 500px) {
+            #calculator {
+                max-width: 400px;
+            }
             #display {
-                font-size: 10vw;
-                height: 12vh;
+                font-size: 40px;
             }
             button {
-                padding: 3vh 0;
-                font-size: 6vw;
-            }
-        }
-
-        /* Ландшафтная ориентация */
-        @media (orientation: landscape) {
-            body {
-                justify-content: flex-start;
-                padding-top: 5vh;
-            }
-            #calculator {
-                max-width: 90vh;
-            }
-            #display {
-                height: 10vh;
-                font-size: 6vw;
+                font-size: 24px;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Тело калькулятора без изменений -->
     <div id="calculator">
         <input type="text" id="display" readonly>
         <div class="buttons">
-            <!-- Кнопки как в предыдущей версии -->
+            <button onclick="clearDisplay()">C</button>
+            <button class="operator" onclick="appendOperator('/')">/</button>
+            <button class="operator" onclick="appendOperator('*')">×</button>
+            <button class="operator" onclick="appendOperator('-')">-</button>
+            <button onclick="appendNumber('7')">7</button>
+            <button onclick="appendNumber('8')">8</button>
+            <button onclick="appendNumber('9')">9</button>
+            <button class="operator" onclick="appendOperator('+')">+</button>
+            <button onclick="appendNumber('4')">4</button>
+            <button onclick="appendNumber('5')">5</button>
+            <button onclick="appendNumber('6')">6</button>
+            <button onclick="calculate()" class="equals" style="grid-row: span 2">=</button>
+            <button onclick="appendNumber('1')">1</button>
+            <button onclick="appendNumber('2')">2</button>
+            <button onclick="appendNumber('3')">3</button>
+            <button onclick="appendNumber('0')" style="grid-column: span 2">0</button>
+            <button onclick="appendNumber('.')">.</button>
         </div>
     </div>
 
     <script>
-        /* JavaScript остается без изменений */
+        // Инициализация Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.enableClosingConfirmation();
+
+        // Инициализация калькулятора
+        let currentNumber = '';
+        let previousNumber = '';
+        let operator = '';
+
+        function appendNumber(num) {
+            if (num === '.' && currentNumber.includes('.')) return;
+            currentNumber += num;
+            updateDisplay();
+        }
+
+        function appendOperator(op) {
+            if (currentNumber === '') return;
+            operator = op;
+            previousNumber = currentNumber;
+            currentNumber = '';
+            updateDisplay();
+        }
+
+        function clearDisplay() {
+            currentNumber = '';
+            previousNumber = '';
+            operator = '';
+            updateDisplay();
+        }
+
+        function calculate() {
+            if (!previousNumber || !currentNumber || !operator) return;
+            
+            const prev = parseFloat(previousNumber);
+            const current = parseFloat(currentNumber);
+            let result;
+
+            switch(operator) {
+                case '+': result = prev + current; break;
+                case '-': result = prev - current; break;
+                case '*': result = prev * current; break;
+                case '/': result = prev / current; break;
+                default: return;
+            }
+
+            currentNumber = Number.isInteger(result) ? 
+                result.toString() : 
+                result.toFixed(2).replace(/\.?0+$/, '');
+            
+            previousNumber = '';
+            operator = '';
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            const display = document.getElementById('display');
+            display.value = operator ? 
+                `${previousNumber} ${operator} ${currentNumber}` : 
+                currentNumber || '0';
+        }
+
+        // Обработчик изменения размера экрана
+        tg.onEvent('viewportChanged', () => {
+            document.body.style.height = tg.viewportHeight + 'px';
+        });
+
+        // Инициализация при загрузке
+        tg.ready();
     </script>
 </body>
 </html>
